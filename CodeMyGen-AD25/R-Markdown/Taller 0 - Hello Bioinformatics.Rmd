@@ -1,0 +1,135 @@
+---
+title: 'Taller 0: Hello Bioinformatics'
+author: "Dirección de Educación GenoBit: Genomics and Bioinformatics"
+date: "2025-07-26"
+output:
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introducción
+
+En este cuadernillo interactivo aprenderás a usar **R** desde cero con ejemplos aplicados a biología. Posteriormente lograrás un enfoque completo en bioinformática y áreas afines.
+
+---
+
+## ¿Qué es R?
+
+R es un lenguaje de programación muy utilizado en análisis de datos, estadística y bioinformática. También cuenta con librerías especializadas para trabajar con secuencias genéticas, datos clínicos y más.
+
+Para comenzar, ejecuta este código:
+
+```{r}
+# Ejecuta esta celda con Ctrl+Enter o Cmd+Enter
+print("¡Hola, mundo de la bioinformática!")
+```
+
+
+## 1. Comentarios
+En **R** los comentarios comienzan con #. Son útiles para explicar tu código.
+```{r}
+# Esto es un comentario
+# Puedes escribir lo que quieras aquí
+print("Esto se imprimirá")
+```
+
+
+## Variables y tipos de datos
+Una variable puede almacenar texto, números, secuencias, etc.
+```{r}
+# Guardamos una secuencia de ADN como cadena
+mi_adn <- "ATGCGTAC"
+
+# Mostramos el contenido
+print(mi_adn)
+```
+**Ejercicio:** Cambia la secuencia de ADN y vuelve a ejecutar la celda.
+
+
+## 3. Operaciones con cadena de texto
+Las secuencias de ADN pueden manejarse como texto
+```{r}
+# Longitud de la secuencia
+longitud <- nchar(mi_adn)
+print(paste("Longitud de la secuencia:", longitud))
+
+# Contamos cuántas veces aparece "A"
+conteo_A <- stringr::str_count(mi_adn, "A")
+print(paste("Número de A:", conteo_A))
+```
+**Ejercicio: Completa el código para contar cuátas veces acarece "G"**
+```{r}
+# Tu código aquí:
+
+```
+
+
+## 4. Listas (Vectores)
+Podemos tener varias secuencias almacenadas en un vector.
+```{r}
+secuencias <- c("ATGC", "CGTA", "TTGGCCA")
+print(secuencias)
+
+# Acceder al primer elemento
+print(paste("Primera secuencia:", secuencias[1]))
+```
+**Ejercicio: Agrega otra secuencia a la lista**
+```{r}
+# Tu código aquí:
+
+```
+
+
+## 5. Bucles: Repetir acciones
+Podemos procesar todas las secuencias con un for
+```{r}
+for (sec in secuencias) {
+  print(paste("Secuencia:", sec, "- Longitud:", nchar(sec)))
+}
+```
+
+## 6. Funciones: Reutilizar código
+Podemos crear funciones para tareas repetitivas, como contar bases.
+```{r}
+contar_bases <- function(adn) {
+  a <- stringr::str_count(adn, "A")
+  t <- stringr::str_count(adn, "T")
+  c <- stringr::str_count(adn, "C")
+  g <- stringr::str_count(adn, "G")
+  print(paste("A:", a, "T:", t, "C:", c, "G:", g))
+}
+
+# Probar la función
+contar_bases("GATTACA")
+```
+**Ejercicio: Prueba con otra secuencia de tu elección.**
+```{r}
+# Tu código aquí:
+
+```
+
+
+## Resumen
+Hoy aprendiste:
+
+- Cómo imprimir mensajes
+
+- Variables y tipos de datos básicos
+
+- Listas (vectores)
+
+- Bucles
+
+- Funciones
+
+## Próximos pasos:
+- Usar Bioconductor
+
+- Leer archivos FASTA con Biostrings
+
+- Manipular datos con tidyverse
+
+- Realizar análisis bioinformáticos más avanzados
