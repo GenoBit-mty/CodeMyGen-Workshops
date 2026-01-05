@@ -1,0 +1,358 @@
+---
+title: "Taller de Introducción: Hello Bioinformatics in R"
+output: html_notebook
+---
+
+Este es el documento de introducción del taller CodeMyGen de Genobit.
+
+Para empezar instalar estas libreriars por medio de la terminal
+- install.packages("tidyverse")
+- install.packages("pheatmap")
+
+-- Inicia Sof
+Elemento/Variable
+
+```{r}
+gen_p53 <- "ATGGAGGAGCCGCAGTCAGATCCTAGCGTCGAGCCCCCTCTGAGTCAGGAAACATTTTCAGACCTATGGAAACTACTTCCTGAAAACAACGTTCTGTCCCCCTTGCCGTCCCAAGCAATGGATGATTTGATGCTGTCCCCGGACGATATTGAACAATGGTTCACTGAAGACCCAGGTCCAGATGAAGCTCCCAGAATGCCAGAGGCTGCTCCCCCCGTGGCCCCTGCACCAGCAGCTCCTACACCGGCGGCCCCTGCACCAGCCCCCTCCTGGCCCCTGTCATCTTCTGTCCCTTCCCAGAAAACCTACCAGGGCAGCTACGGTTTCCGTCTGGGCTTCTTGCATTCTGGGACAGCCAAGTCTGTGACTTGCACGTACTCCCCTGCCCTCAACAAGATGTTTTGCCAACTGGCCAAGACCTGCCCTGTGCAGCTGTGGGTTGATTCCACACCCCCGCCCGGCACCCGCGTCCGCGCCATGGCCATCTACAAGCAGTCACAGCACATGACGGAGGTTGTGAGGCGCTGCCCCCACCATGAGCGCTGCTCAGATAGCGATGGTCTGGCCCCTCCTCAGCATCTTATCCGAGTGGAAGGAAATTTGCGTGTGGAGTATTTGGATGACAGAAACACTTTTCGACATAGTGTGGTGGTGCCCTATGAGCCGCCTGAGGTTGGCTCTGACTGTACCACCATCCACTACAACTACATGTGTAACAGTTCCTGCATGGGCGGCATGAACCGGAGGCCCATCCTCACCATCATCACACTGGAAGACTCCAGTGGTAATCTACTGGGACGGAACAGCTTTGAGGTGCGTGTTTGTGCCTGTCCTGGGAGAGACCGGCGCACAGAGGAAGAGAATCTCCGCCGCAAGCCGGGGACGTGGAGGAAAAC"
+
+print(gen_p53)
+
+```
+
+
+
+Vectores
+
+```{r}
+# Vector de texto con nombres de genes 
+nombres_genes <- c("TP53", "BRCA1", "EGFR", "MYC", "TNF") 
+
+# Vector numérico con niveles de expresión (ej. en log2 Fold Change) 
+expresion_fc <- c(-2.5, 1.8, 3.2, 2.1, -0.5) 
+
+print(nombres_genes) 
+print(expresion_fc)
+
+```
+
+
+
+Data Frames
+
+```{r}
+anotacion_genica <- data.frame( 
+   gen_id = nombres_genes, 
+   expresion = expresion_fc, 
+   cromosoma = c("chr17", "chr17", "chr7", "chr8", "chr6"), 
+   es_oncogen = c(FALSE, FALSE, TRUE, TRUE, FALSE) 
+) 
+
+print(anotacion_genica)
+
+```
+-- Termina Sof
+
+
+-- Inicia Lalo
+Inspección y Limpieza (Tidyverse)
+
+```{r}
+# Cargar la librería
+library(dplyr)
+
+# 1. Filtrar filas (filter)
+#    Seleccionar solo los genes que están sobre-expresados (expresion > 1)
+genes_up <- anotacion_genica %>%
+  filter(expresion > 1)
+
+# 2. Añadir una nueva columna (mutate)
+#    Clasificar los genes según su cambio de expresión
+anotacion_genica <- anotacion_genica %>%
+  mutate(regulacion = case_when(
+    expresion > 1.5 ~ "Up",
+    expresion < -1.5 ~ "Down",
+    TRUE ~ "No significativo"
+  ))
+
+# 3. Ordenar filas (arrange)
+#    Ordenar los genes por su nivel de expresión de mayor a menor
+genes_ordenados <- anotacion_genica%>%
+  arrange(desc(expresion)) # desc() para orden descendente
+
+print(genes_ordenados)
+
+```
+-- Termina Lalo
+
+
+
+Visualización con ggplot2
+-- Inicia Angel
+
+Histogramas
+
+```{r}
+# Simulamos datos de un experimento completo con 1000 genes
+#Aseguramos que sea reproducible, cada vez que se ejecute este code se obtendrá la misma data random
+set.seed(123) 
+#simulamos 1000 valores aleatorios que siguen una distribución normal. Lo interpretamos como: los cambios de expresión
+# de  1000 genes.
+
+#guardamos estos valores en un atabla con una columna llamada expresión
+expresion_total <- data.frame(expresion = rnorm(1000, mean = 0, sd = 1.5))
+
+#aqui comienza la parte de visualización
+library(ggplot2)
+#Decimos: “Usa la tabla expresion_total, y toma la columna expresion como eje X”.
+ggplot(data = expresion_total, mapping = aes(x = expresion)) +
+   # Crea el histograma dividiendo los valores en 50 cajitas (bins)
+   #dodgerblue rellena las barras de azul
+   # color crea contornos negros 
+  geom_histogram(bins = 50, fill = "dodgerblue", color = "black") +
+   #labs da titulo y nombres a los ejes
+  labs(title = "Distribución del Cambio de Expresión Génica",
+       x = "Log2 Fold Change", y = "Número de Genes")
+
+#Interpretación: 
+#Este gráfico muestra cómo se distribuyen los cambios de expresión de todos los genes.
+#Si la mayoría están cerca de 0, significa que no hubo cambios grandes.
+#Si hay colas largas, significa que algunos genes cambiaron mucho.
+
+
+```
+Interpretación de la gráfica: Histograma
+"Distribución del Cambio de Expresión Génica"
+
+El eje X (Log2 Fold Change) indica cuánto cambia la expresión de los genes:
+Valores cerca de 0 → los genes no cambiaron mucho.
+Valores positivos → genes sobreexpresados (más activos).
+Valores negativos → genes subexpresados (menos activos).
+
+El eje Y (Número de Genes) muestra cuántos genes caen en cada rango de expresión.
+La forma es una campana simétrica (como se esperaba, ya que simulamos con una distribución normal).
+La mayoría de los genes (~40-50 por bin) tienen cambios de expresión pequeños y están cerca de 0.
+Menos genes tienen cambios muy grandes (colas más bajas en los extremos).
+
+Interpretación didáctica:
+En este experimento simulado, la gran mayoría de los genes no cambió mucho su nivel de expresión (se concentran alrededor de 0). Solo unos pocos genes muestran cambios grandes (positivo o negativo).
+
+
+-- Termina Angel
+
+
+-- Inicia Lalo
+Boxplots
+```{r}
+ggplot(data = anotacion_genica, mapping = aes(x = es_oncogen, y = expresion, fill = es_oncogen)) +
+  geom_boxplot() +
+  labs(title = "Expresión: Oncogenes vs. No Oncogenes",
+       x = "¿Es Oncogén?", y = "Log2 Fold Change")
+```
+-- Termina Lalo
+
+-- Inicia Angel
+Scatterplots
+```{r}
+# Añadimos un p-valor simulado
+#Le añadimos a nuestra tabla una nueva columna llamada p_valor.
+#Estos son valores de significancia estadística de los genes.
+anotacion_genica$p_valor <- c(0.001, 0.06, 0.0005, 0.01, 0.1)
+
+#En el eje X ponemos la expresión génica (cambio log2).
+#En el eje Y ponemos la significancia, pero transformada como -log10(p-valor).
+#Esto se hace porque los p-valores son muy pequeñitos (ej. 0.001), y con esta escala se ven mejor.
+ggplot(data = anotacion_genica, mapping = aes(x = expresion, y = -log10(p_valor))) +
+   #Dibujamos puntos para cada gen.
+   #El color depende de si el gen está arriba, abajo o sin regulación (columna regulacion).
+   #size = 4 hace los puntos más visibles.
+  geom_point(aes(color = regulacion), size = 4) + # Usamos la columna creada antes
+  labs(title = "Relación entre Expresión y Significación",
+       x = "Log2 Fold Change", y = "-log10(P-valor)") +
+   #Dibuja una línea horizontal en el nivel de p = 0.05 (umbral típico de significancia).
+   #Los puntos por arriba son genes “significativos”.
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed") + # Línea de significancia
+   #Dibuja líneas verticales en -1 y +1 de log2 Fold Change.
+   #Eso marca qué tan grande debe ser el cambio de expresión para considerarse relevante.
+  geom_vline(xintercept = c(-1, 1), linetype = "dashed")      # Líneas de fold change
+
+#Este gráfico es un volcano plot básico:
+#Genes en el centro (cerca de 0) no cambiaron mucho.
+#Genes en los extremos (muy negativos o muy positivos en X) cambiaron mucho su expresión.
+#Genes por arriba de la línea horizontal son los que además son estadísticamente significativos.
+```
+Interpretación de la gráfica: Scatterplot (Volcano plot básico)
+"Relación entre Expresión y Significación"
+
+Eje X (Log2 Fold Change): magnitud del cambio de expresión.
+Eje Y (-log10 P-valor): significancia estadística → cuanto más arriba está un punto, más confiable es el resultado.
+
+Lo que vemos en los puntos:
+   Gen rojo (Down, ~ -2 en X, ~3 en Y)
+      Tiene expresión negativa grande (log2FC ≈ -2).
+      Muy significativo (p = 0.001 → -log10 = 3).
+      Interpretación: este gen está fuertemente reprimido y de manera confiable.
+
+   Genes azules (Up)
+      Uno con log2FC ≈ 3 y -log10 ≈ 3.3 → altamente sobreexpresado y muy significativo.
+      Otro con log2FC ≈ 2 y -log10 ≈ 2 → sobreexpresado con moderada significancia.
+      Otro con log2FC ≈ 1.5 y -log10 ≈ 1.3 → sobreexpresado, pero no pasa el umbral de p < 0.05 (queda debajo de la 
+      línea horizontal).
+   
+   Gen verde (No significativo, log2FC ≈ -0.7 y -log10 ≈ 1)
+      Tiene un cambio pequeño en expresión.
+      Además, no es estadísticamente significativo.
+      Conclusión: este gen probablemente no está regulado realmente, solo ruido.
+
+   Líneas de referencia:
+      Línea horizontal (p = 0.05, -log10 ≈ 1.3) → solo los puntos por arriba se consideran significativos.
+      Líneas verticales en -1 y +1 → marcan un umbral biológico de cambio relevante.
+
+Interpretación didáctica:
+Genes que cruzan ambos umbrales (más allá de ±1 en log2FC y arriba de p<0.05) son los verdaderamente interesantes.
+Aquí tenemos dos genes muy significativos: uno fuertemente reprimido (rojo) y uno fuertemente sobreexpresado (azul).
+Los demás están cerca del ruido o con cambios no confiables.
+
+-- Termina Angel
+
+
+-- Inicia Lalo
+HeatMaps
+
+```{r}
+library(pheatmap)
+
+# 1. Crear una matriz de expresión de ejemplo
+#    10 genes, 6 muestras (3 control, 3 tratamiento)
+set.seed(42)
+matriz_expresion <- matrix(rnorm(60), nrow = 10, ncol = 6)
+rownames(matriz_expresion) <- paste0("Gen", 1:10)
+colnames(matriz_expresion) <- c("Control1", "Control2", "Control3",
+                                "Tratado1", "Tratado2", "Tratado3")
+
+# Simular que algunos genes se sobre-expresan en el tratamiento
+matriz_expresion[1:5, 4:6] <- matriz_expresion[1:5, 4:6] + 2
+
+# 2. Crear el heatmap
+# 'scale = "row"' normaliza por gen, destacando cambios relativos
+pheatmap(matriz_expresion, scale = "row",
+         main = "Heatmap de Expresión Génica (Control vs. Tratado)",
+         cutree_cols = 2) # Agrupa las columnas en 2 clusters
+```
+-- Termina Lalo
+
+
+Caso de Análisis
+
+Contexto:
+Somos bioinformáticos analizando un experimento de RNA-seq. Hemos comparado la expresión génica de células cancerosas tratadas con un nuevo fármaco contra células no tratadas (control). Tenemos un archivo con los resultados: el nombre del gen, el cambio de expresión promedio (log2FoldChange) y un p-valor ajustado que indica la significancia de ese cambio.
+
+Objetivo:
+Identificar y visualizar los genes diferencialmente expresados (DEGs) para entender el efecto del fármaco. Un gen se considera DEG si log2FoldChange > 1 (o < -1) y p_adj < 0.05.
+
+
+```{r}
+# Generar el data frame para el problema (simula la salida de un análisis RNA-seq)
+set.seed(101)
+resultados_rnaseq <- data.frame(
+  gen_id = paste0("GEN", 1:5000),
+  log2FoldChange = rnorm(5000, mean = 0, sd = 1.2),
+  p_adj = runif(5000, min = 0, max = 1)
+)
+
+# Simular algunos genes que sí responden al tratamiento
+indices_degs <- sample(1:5000, 200)
+resultados_rnaseq$log2FoldChange[indices_degs] <- rnorm(200, mean = 2.5, sd = 1)
+resultados_rnaseq$p_adj[indices_degs] <- runif(200, 0, 0.04)
+
+# Introducir valores faltantes (NA) que a veces ocurren
+resultados_rnaseq$p_adj[sample(1:5000, 50)] <- NA
+
+head(resultados_rnaseq)
+
+library(tidyverse)
+```
+
+
+Limpieza y Filtrado
+
+```{r}
+# Inspeccionar la estructura y resumen de los datos
+summary(resultados_rnaseq)
+
+# Contar cuántos genes tienen valores NA en p_adj
+# La función is.na() devuelve TRUE si el valor es NA. sum() cuenta los TRUEs.
+genes_con_na <- sum(is.na(resultados_rnaseq$p_adj))
+print(paste("Número de genes con p_adj NA:", genes_con_na))
+
+# Crear un nuevo data frame llamado rnaseq_limpio sin filas con NA
+# La función na.omit() elimina cualquier fila que contenga al menos un NA.
+rnaseq_limpio <- na.omit(resultados_rnaseq)
+
+# Verificar que el nuevo data frame no tiene NAs
+print(paste("Número de NAs en rnaseq_limpio:", sum(is.na(rnaseq_limpio$p_adj))))
+```
+
+Manipulación de Datos
+```{r}
+# Usar mutate() y case_when() para añadir la columna de clasificación
+rnaseq_limpio <- rnaseq_limpio %>%
+  mutate(regulacion = case_when(
+    log2FoldChange > 1 & p_adj < 0.05  ~ "Up-regulated",
+    log2FoldChange < -1 & p_adj < 0.05 ~ "Down-regulated",
+    TRUE                               ~ "No significativo" # El resto de los casos
+  ))
+
+# Crear una tabla degs_finales que contenga solo los DEGs
+degs_finales <- rnaseq_limpio %>%
+  filter(regulacion == "Up-regulated" | regulacion == "Down-regulated")
+  # Alternativa: filter(regulacion != "No significativo")
+
+# Contar cuántos genes son DEGs
+print(paste("Número total de genes diferencialmente expresados:", nrow(degs_finales)))
+
+# Ver cómo se distribuyen
+table(degs_finales$regulacion)
+```
+
+Visualización
+```{r}
+# Crear el Volcano Plot usando el data frame rnaseq_limpio
+volcano_plot <- ggplot(data = rnaseq_limpio, 
+                       mapping = aes(x = log2FoldChange, 
+                                     y = -log10(p_adj), 
+                                     color = regulacion)) +
+  geom_point(alpha = 0.6, size = 1.5) + # Puntos semitransparentes para ver la densidad
+  
+  # Definir los colores para cada categoría
+  scale_color_manual(values = c("blue", "grey", "red"),
+                     name = "Regulación") +
+  
+  # Añadir líneas de umbral
+  geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "black") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black") +
+  
+  # Mejorar etiquetas y título
+  labs(title = "Volcano Plot: Efecto del Fármaco en la Expresión Génica",
+       x = "Log2 Fold Change",
+       y = "-log10 (P-valor ajustado)") +
+  
+  # Usar un tema limpio
+  theme_minimal()
+
+# Mostrar el gráfico
+print(volcano_plot)
+```
+
+Resumen y Reporte
+```{r}
+# Usar el data frame de DEGs, filtrar por los "Up-regulated" y ordenar
+top_10_upregulated <- degs_finales %>%
+  filter(regulacion == "Up-regulated") %>%
+  arrange(desc(log2FoldChange)) %>% # Ordenar de mayor a menor fold change
+  head(10) # Seleccionar las primeras 10 filas
+
+# Mostrar la tabla final
+print("Los 10 genes más sobre-expresados por el fármaco:")
+print(top_10_upregulated)
+```
+

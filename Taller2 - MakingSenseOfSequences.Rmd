@@ -1,0 +1,289 @@
+---
+title: "MakingSenseOfSequences"
+author: "Equipo de Educación de GenoBit"
+date: "2025-10-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Segundo taller de GenoBit: Making sense of sequences, in R.
+
+
+Instalar paquetes y librerías que son necesarias
+
+```{r}
+install.packages("seqinr")
+install.packages("BiocManager")
+BiocManager::install("Biostrings")
+
+library(seqinr)
+library(Biostrings)
+```
+
+
+
+En este ejercicio analizamos una secuencia simulada del gen p53, conocido como el “guardián del genoma” por su papel en 
+la regulación del ciclo celular y prevención del cáncer.
+Aprenderemos a calcular la composición de bases y visualizar la proporción de nucleótidos con R, como un primer acercamiento al análisis bioinformático de secuencias reales.
+
+-- gráfica de nucleótidos
+```{r}
+library(Biostrings)
+library(ggplot2)
+
+# Crear una secuencia simulada (fragmento del gen p53)
+dna_seq <- DNAStringSet("ATGACTGCCATGGAGGAGTCACAGTCAGCCGTGGGCGTGAGCGCTTCGAGATGTTCCGAGAGCTGAATGAGGCCTTGGAAGT")
+
+dna_seq
+
+# calcular la longitud de la secuencia
+cat("Longitud de la secuencia: ", width(dna_seq), "\n")
+
+# calcular la frecuencia de los nuecletidos en la cadena (solo A, T, G, C)
+freq <- alphabetFrequency(dna_seq)[, c("A", "T", "G", "C")]
+
+freq_df <- data.frame(
+   Base = names(freq),
+   Frecuencia = as.numeric(freq)
+)
+
+# graficar correctamente
+ggplot(freq_df, aes(x = Base, y = Frecuencia, fill = Base)) +
+   geom_bar(stat = "identity", color = "black") +
+   labs(
+      title = "Composición de nucleótidos en la secuencia simulada de p53",
+      x = "Base",
+      y = "Frecuencia"
+   ) +
+   theme_minimal(base_size = 13) +
+   scale_fill_brewer(palette = "Dark2")
+
+
+```
+
+
+-- Funciones Bioinformáticas
+```{r}
+#esta libreria facilita el manejo de cadenas de texto
+library(stringr)
+
+# ---- Funciones bioinformáticas ----
+# Función 1: Calcula el contenido de GC en una secuencia de ADN
+gc_content <- function(seq) {
+   seq <- toupper(seq) #Convierte la secuencia a mayúsculas
+   g <- str_count(seq, "G") #Contamos las ocurrencias de G
+   c <- str_count(seq, "C") #Contamos las ocurrencias de C
+   gc <- (g + c) /nchar(seq) * 100 #calculamos el porcentaje de GC
+   return(gc) #Valor de regreso es el porcentaje de GC 
+}
+
+#Funcion para encontrar las posiciones de un motivo en una secuencia
+find_motif <- function(seq, motif){
+   seq <- toupper(seq)
+   motif  <- toupper(motif)
+   str_locate_all(seq, motif)
+}
+
+seqExample <- "ATGACTGCCATAGGAGGA"
+
+#Ejecutamos la funcion para calcular el porcentaje de GC de la secuencia
+gc_percentage <- gc_content(seqExample)
+cat("Contenido de GC en la secuencia: ", round(gc_percentage, 2), "%\n") 
+
+#definimos un motivo para buscar en la secuencia
+motifExample <- "AGG"
+
+motif_positions <- find_motif(seqExample, motifExample)
+cat("Motivo: ", motifExample, "encontrado en las posiciones: \n")
+print(motif_positions[[1]])
+
+
+#Mostrar un resumen del análisis
+cat("\n Resumen: \n")
+cat("Longitud de la secuencia: ", nchar(seq), "bases\n")
+cat("Frecuencia del motivo: ",  motifExample, ": ", nrow(motif_positions[[1]]), "veces\n")
+
+
+
+
+
+```
+
+
+
+-- Simulación y visualización del contenido de 10 genes
+
+```{r}
+set.seed(123)
+
+genes <- paste0("Gene", 1:10)
+
+gc_vals <- runif(10, 35, 65)
+
+
+df_gc <- data.frame(Gene = genes, GC_Content = gc_vals)
+
+
+ggplot(df_gc, aes(x = Gene, y = GC_Content, fill = GC_Content)) +
+  
+
+  geom_bar(stat = "identity") +
+  
+
+  scale_fill_viridis_c() +
+  
+
+  labs(
+    title = "Contenido GC de genes",  
+    x = "Gen",                       
+    y = "% GC"                        
+  )
+```
+
+
+Caso de análisis
+
+Imagina que eres parte de un pequeño laboratorio de biología molecular que está analizando la secuencia de un gen candidato relacionado con la resistencia a antibióticos. Te entregan una secuencia FASTA y te piden hacer un análisis exploratorio básico:
+
+- Calcular su contenido GC (para conocer su estabilidad y características genómicas).
+- Buscar si contiene un motivo específico que podría ser una región funcional.
+- Traducir la secuencia de aminoácidos.
+- Visualizar la frecuencia de los aminoácidos presentes en la proteína.
+
+
+Objetivo: ¿Qué tan rica en GC es esta secuencia?
+
+
+```{r}
+# Cargar librerías
+library(seqinr)
+library(ggplot2)
+
+# Definir una secuencia de ADN de ejemplo
+secuencia <- "ATGGCGTACCTGATCGTGAAGGCTTACGTCGCTGGTGAATAG"
+
+#aseguramos que sea de longitud multiplo de 3 para hacer la traducción
+longitud_valida <- (nchar(secuencia) %/% 3) * 3
+secuencia <- substr(secuencia, 1, longitud_valida)
+
+# formateamos como vector que trabaja con seqinr
+seq_vector <- seqinr::s2c(secuencia)
+
+# calculamos contenido de GC
+contenido_GC <- seqinr::GC(seq_vector)
+cat("Contenido de GC: ", round(contenido_GC * 100, 2), "%\n")
+
+
+#buscar motivo especifico 
+motivo <- "ATG"
+posiciones <- gregexpr(motivo, secuencia)[[1]]
+if (posiciones[1] != -1) {
+   cat("Motivo encontrado en las posiciones: ", posiciones, "\n")
+} else {
+   cat("Motivo no encontrado en la secuencia. \n")
+}
+
+
+#Traducir la secuencia a aminoacidos
+aminoacidos <- seqinr::translate(seq_vector)
+cat("Secuencia traducida a aminoacidos: \n", paste(aminoacidos, collapse = ""), "\n")
+
+
+#calculamos frecuencia de aminoacidos
+frecencia_aa <- table(aminoacidos)
+df_freq <- as.data.frame(frecuencia_aa)
+
+
+#visualización de la frecuencia de aminoacidos
+ggplot(df_freq, aes(x=aminoacidos, y=Freq)) +
+   geom_bar(stat = "identity", fill = "steelblue") +
+   theme_minimal() +
+   labs(
+      title = "Frecuencia de aminoácidos en la secuencia",
+      x = "Aminoácido",
+      y = "Frecuencia"
+      )
+```
+
+
+
+
+Clasificación de los aminoácidos en forma de tabla:
+```{r}
+# ===========================================
+# Tabla de interpretación de aminoácidos
+# ===========================================
+
+# Crear un data frame con la información biológica
+aminoacidos_info <- data.frame(
+  Simbolo = c("A", "G", "L", "V", "E", "K", "*"),
+  Aminoacido = c("Alanina", "Glicina", "Leucina", "Valina", 
+                 "Ácido glutámico", "Lisina", "Stop"),
+  Significado = c(
+    "Hidrofóbico, frecuente en regiones internas",
+    "Pequeño y flexible",
+    "Hidrofóbico",
+    "Hidrofóbico",
+    "Negativo",
+    "Positivo",
+    "Fin de la traducción"
+  )
+)
+
+# Mostrar la tabla
+print(aminoacidos_info)
+
+# (Opcional) Visualizarla de manera más bonita con knitr::kable si estás en RMarkdown
+if (requireNamespace("knitr", quietly = TRUE)) {
+  knitr::kable(aminoacidos_info, caption = "Interpretación biológica de los aminoácidos detectados")
+}
+
+```
+
+```{r}
+#esta libreria facilita el manejo de cadenas de texto
+library(stringr)
+
+# ---- Funciones bioinformáticas ----
+
+
+#Funcion para encontrar las posiciones de un motivo en una secuencia
+find_motif <- function(seq, motif){
+   seq <- toupper(seq)
+   motif  <- toupper(motif)
+   str_locate_all(seq, motif)
+}
+
+seqExample <- "CDEC3BAF824D045D9067CC5A13991CF40C84787D734E7FD1784D1F5F77C9E13FDD97F5B4094A2E2A932CCCB06C5BB35F525A27DFFCD40C6200F5140E87257D83CD674A087141A16BB86A7215EA13EFA47405125D2094D1FB9B7D1CE1C2DD471CFC609DB49C73923637D1A05F99AC5FC83B0A7C188DAE47435E75B0A304F425B45F53A79643A574CC9A3B57EB64733611D14BAD59CAF43041E57BBC2FCC210A0F2B84BBC0B3361D01A65CFBBFA832CA65DCC89A9CD0B1A57B4B1883BD342D0429FC7251BA04CA22A3BD47B1E40B05B90CCCF16EAFC08AAFB76B2400B3811088B71CC79DC6D02F327CDEC9E312377F8F6696077EC5DB0E6616C6392072C658BC179D27AF39BF7AC08FBE556ACC9083F4947B20C4F4A5B5D57347C9D8DEB3714F48A1762C4FA35DA7D5496BB666A10FC172ED71ACEAAD914FD76674D7261496F30DCDECFB2BE2533DFED98C791CE887A0817943A562BD38ED3B5CD321B2C3A4688D2CDECF40E3B47CD2C732C1A089EF07195BCF07B2FD8C6ACB7EC93E435612FFF77D34E90DA4608466F52C93A769FB1D886F9637E2B306B93431B76CA1342C1DDD6C0D0220823F54708D24AB257AA360FAEF8DEE7BBCEB816978107CF2041A79"
+
+
+
+#definimos un motivo para buscar en la secuencia
+motifExample <- "A"
+
+motif_positions <- find_motif(seqExample, motifExample)
+cat("Motivo: ", motifExample, "encontrado en las posiciones: \n")
+print(motif_positions[[1]])
+
+
+#Mostrar un resumen del análisis
+cat("\n Resumen: \n")
+cat("Frecuencia del motivo: ",  motifExample, ": ", nrow(motif_positions[[1]]), "veces\n")
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+

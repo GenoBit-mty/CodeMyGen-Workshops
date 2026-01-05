@@ -1,0 +1,155 @@
+---
+title: "HarmonyInData"
+author: "Equipo de Educación de GenoBit"
+date: "2025-11-04"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+En este tercer taller de CodeMyGen by GenoBit, daremos un paso más en el mundo de la bioinformática utilizando R.
+Las funciones apply son un conjunto de herramientas muy utilizadas para automatizar análisis sin necesidad de usar bucles explícitos.
+
+Aplicaremos este conocimiento en un caso práctico de análisis de secuencias genéticas, donde automatizaremos el cálculo del contenido GC y visualizaremos los resultados con ggplot2.
+
+
+## Las funciones Apply
+Pertenecen a una familia que permite aplicar una función a estructuras completas de datos (como listas o matrices) sin necesidad de escribir bucles for.
+Estas funciones son fundamentales en bioinformática, donde comúnmente se manejan grandes volúmenes de datos genómicos o proteómicos.
+
+
+
+
+## Explorando la familia apply()
+### Creación de una matriz simulada con porcentajes de GC en 5 genes y 3 muestras
+
+```{r}
+set.seed(42)
+gc_matrix <- matrix(runif(15, 35, 65), nrow = 5, ncol = 3)
+rownames(gc_matrix) <- paste0("Gene ", 1:5)
+colnames(gc_matrix) <- paste0("Sample ", 1:3)
+   
+gc_matrix
+```
+
+Calculamos la media de %GC por gen (filas):
+```{r}
+gc_mean_per_gene <- apply(gc_matrix, 1, mean)
+gc_mean_per_gene
+```
+
+
+Calculamos la desviación estándar de %GC por muestra (columnas):
+```{r}
+gc_sd_per_sample <- apply(gc_matrix, 2, sd)
+gc_sd_per_sample
+```
+
+
+### Cálculo de contenido de GC de múltiples secuencias con lapply
+```{r}
+library(seqinr)
+secuencias <- list(
+   Gene1 = "ATGCGTACGTCAGT",
+   Gene2 = "ATGCGCGGATCG",
+   Gene3 = "GGGATCGTAA",
+   Gene4 = "ATGCCCGGTTAA",
+   Gene5 = "GCGTATGATCGT"
+)
+
+#Cálculo de porcentaje GC con lapply
+gc_content <- lapply(secuencias, function(seq){
+   seq_vec <- seqinr::s2c(seq)
+   seqinr::GC(seq_vec)*100
+})
+
+gc_content
+
+```
+
+
+### Conversión del resultado a vector legible con sapply
+```{r}
+gc_content_vec <- sapply(secuencias, function(seq){
+   seq_vec <- seqinr::s2c(seq)
+   seqinr::GC(seq_vec)*100
+})
+
+gc_content_vec
+```
+
+
+### visualización del contenido
+```{r}
+library(ggplot2)
+
+df_gc <- data.frame(
+   Gene = names(gc_content_vec),
+   GC_Content = as.numeric(gc_content_vec)
+)
+
+ggplot(df_gc, aes(x=Gene, y=GC_Content, fill = GC_Content)) +
+   geom_bar(stat = "identity", color = "black") +
+   scale_fill_viridis_c() +
+   labs(
+      title = "Contenido GC calculado con funciones apply",
+      x = "Gen",
+      y = "% GC"
+   ) +
+   theme_minimal(base_size = 13)
+```
+
+## Funciones extra
+
+### Función que analiza la longitud y el contenido de GC/AT
+```{r}
+analyze_seq <- function(seq){
+   seq_vec <- seqinr::s2c(seq)
+   list(
+      length = length(seq_vec),
+      GC = seqinr::GC(seq_vec) * 100,
+      AT = 100 - (seqinr::GC(seq_vec) * 100)
+   )
+}
+
+# Se apica la función a todas las secuencias
+seq_stats <- lapply(secuencias, analyze_seq)
+seq_stats
+
+```
+
+### Cnvertimos la lista resultante en un data frame legible
+```{r}
+df_stats <- data.frame(
+Gene = names(seq_stats),
+Length = sapply(seq_stats, function(x) x$length),
+GC = sapply(seq_stats, function(x) x$GC),
+AT = sapply(seq_stats, function(x) x$AT)
+)
+
+df_stats
+
+```
+
+
+### Hacemos una visualización comparativa
+```{r}
+ggplot(df_stats, aes(x = Gene)) +
+geom_bar(aes(y = GC, fill = "GC"), stat = "identity", position = "dodge") +
+geom_bar(aes(y = AT, fill = "AT"), stat = "identity", position = "dodge") +
+scale_fill_manual(values = c("GC" = "darkgreen", "AT" = "purple")) +
+theme_minimal(base_size = 13) +
+labs(
+title = "Comparación de contenido GC y AT entre genes simulados",
+x = "Gen",
+y = "Porcentaje",
+fill = "Componente"
+)
+```
+
+
