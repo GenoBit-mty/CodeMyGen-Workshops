@@ -1,6 +1,6 @@
 # CodeMyGen-Workshops
 
-**CodeMyGen** is a hands-on bioinformatics workshop series led by Computer Science and Biotechnology Engineering students, @GenoBit members as well, focused on learning by doing for the audience and learning by teaching for the contributors abd mentors. Our mission is to demystify bioinformatics and make computational tools accessible to students from diverse backgrounds who are curious about life sciences, data and code.
+**CodeMyGen** is a hands-on bioinformatics workshop series led by Computer Science and Biotechnology Engineering students, @GenoBit members as well, focused on learning by doing for the audience and learning by teaching for the contributors and mentors. Our mission is to demystify bioinformatics and make computational tools accessible to students from diverse backgrounds who are curious about life sciences, data and code.
 
 
 ## Objectives
